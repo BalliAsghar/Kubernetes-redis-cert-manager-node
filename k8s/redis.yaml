@@ -1,13 +1,13 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: redis-namespace
+  name: redis
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: redis-service
-  namespace: redis-namespace
+  namespace: redis
 spec:
   selector:
     app: redis
@@ -20,7 +20,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: redis
-  namespace: redis-namespace
+  namespace: redis
 spec:
   replicas: 1
   selector:
@@ -41,7 +41,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: redis-config
-  namespace: redis-namespace
+  namespace: redis
 data:
   REDIS_HOST: redis-service
   REDIS_PORT: "6379"
@@ -51,7 +51,7 @@ apiVersion: batch/v1
 kind: CronJob
 metadata:
   name: redis-clear-cache
-  namespace: redis-namespace
+  namespace: redis
 spec:
   schedule: "*/2 * * * *"
   jobTemplate:

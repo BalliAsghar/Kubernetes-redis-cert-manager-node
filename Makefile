@@ -13,3 +13,17 @@ deploy:
 
 	@echo "Done!"
 
+# delete kubernetes cluster
+del:
+	k3d cluster delete Edge
+
+# create kubernetes cluster
+cluster:
+	k3d cluster create Edge --agents 2
+
+# load image to k3d cluster
+load:
+	k3d image import node-app:1.0.0 -c Edge
+
+apply:
+	kubectl apply -f k8s
