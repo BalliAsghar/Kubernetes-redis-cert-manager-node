@@ -35,4 +35,35 @@ spec:
       - name: redis
         image: redis:alpine
         ports:
-        - containerPort: 6379 
+        - containerPort: 6379
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: redis-config
+  namespace: redis-namespace
+data:
+  REDIS_HOST: redis-service
+  REDIS_PORT: "6379"
+---
+# To clear the cache every 2 minutes, should be enough for this demo
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: redis-clear-cache
+  namespace: redis-namespace
+spec:
+  schedule: "*/2 * * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+            - name: redis-clear-cache
+              image: redis:alpine
+              command: ["redis-cli", "-h", "$(REDIS_HOST)", "-p", "$(REDIS_PORT)", "FLUSHALL"]
+              envFrom:
+                - configMapRef:
+                    name: redis-config
+              imagePullPolicy: IfNotPresent
+          restartPolicy: Never

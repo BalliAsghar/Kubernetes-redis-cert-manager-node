@@ -20,8 +20,21 @@ const redis = new Redis({
 app.get("/ping", async (_req, res) => {
   console.log("Received ping request");
   try {
-    const ping = await redis.ping();
-    res.status(200).json({ ping });
+    const pong = await redis.ping();
+    res.status(200).send(pong);
+  } catch (error) {
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
+app.get("/set/:value", async (req, res) => {
+  console.log("Received set request");
+  try {
+    const { value } = req.params;
+    // create a random key
+    const key = Math.random().toString(36).substring(7);
+    await redis.set(key, value);
+    res.status(200).send("OK");
   } catch (error) {
     res.status(500).json({ error: "Something went wrong" });
   }
