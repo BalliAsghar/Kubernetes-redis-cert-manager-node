@@ -42,8 +42,11 @@ spec:
     spec:
       initContainers:
         - name: wait-for-redis
-          image: redis:alpine
-          command: ["sh", "-c", "until redis-cli -h redis-service.redis-namespace.svc.cluster.local ping; do sleep 1; done;"]
+          image: busybox
+          command: ["sh", "-c", "until nslookup $REDIS_HOST; do echo waiting for redis; sleep 2; done;"]
+          envFrom:
+            - configMapRef:
+                name: node-app-configmap
       containers:
       - name: node-app
         image: node-app:1.0.0
