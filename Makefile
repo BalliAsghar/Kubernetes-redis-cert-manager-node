@@ -7,7 +7,7 @@ deploy:
 
 	@echo "load image to k3d cluster..."
 	k3d image import node-app:1.0.0 -c Edge
-
+	
 	@echo "Restarting app..."
 	kubectl apply -f k8s
 
