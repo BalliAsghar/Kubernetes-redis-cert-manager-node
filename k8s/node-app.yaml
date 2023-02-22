@@ -1,0 +1,65 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: node-app-namespace
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: node-app-service
+  namespace: node-app-namespace
+spec:
+  selector:
+    app: node-app
+  ports:
+  - protocol: TCP
+    port: 3000
+    targetPort: 3000
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: node-app-configmap
+  namespace: node-app-namespace
+data:
+  REDIS_HOST: redis-service.redis-namespace.svc.cluster.local
+  REDIS_PORT: "6379"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: node-app
+  namespace: node-app-namespace
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: node-app
+  template:
+    metadata:
+      labels:
+        app: node-app
+    spec:
+      initContainers:
+        - name: wait-for-redis
+          image: redis:alpine
+          command: ["sh", "-c", "until redis-cli -h redis-service.redis-namespace.svc.cluster.local ping; do sleep 1; done;"]
+      containers:
+      - name: node-app
+        image: node-app:1.0.0
+        ports:
+        - containerPort: 3000
+        envFrom:
+        - configMapRef:
+            name: node-app-configmap
+        env:
+        - name: REDIS_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: node-app-configmap
+              key: REDIS_HOST
+        - name: REDIS_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: node-app-configmap
+              key: REDIS_PORT
