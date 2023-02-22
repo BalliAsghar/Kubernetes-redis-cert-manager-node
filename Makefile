@@ -9,7 +9,7 @@ deploy:
 	k3d image import node-app:1.0.0 -c Edge
 
 	@echo "Restarting app..."
-	kubectl rollout restart deployment node-app -n node-app-namespace
+	kubectl apply -f k8s
 
 	@echo "Done!"
 
@@ -25,5 +25,5 @@ cluster:
 load:
 	k3d image import node-app:1.0.0 -c Edge
 
-apply:
-	kubectl apply -f k8s
+restart:
+	kubectl rollout restart deployment node-app -n app
