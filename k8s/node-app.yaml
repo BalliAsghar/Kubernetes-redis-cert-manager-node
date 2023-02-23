@@ -1,13 +1,8 @@
 apiVersion: v1
-kind: Namespace
-metadata:
-  name: app
----
-apiVersion: v1
 kind: Service
 metadata:
   name: node-app-service
-  namespace: app
+  namespace: prod
 spec:
   selector:
     app: node-app
@@ -20,16 +15,16 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: node-app-configmap
-  namespace: app
+  namespace: prod
 data:
-  REDIS_HOST: redis-service.redis.svc.cluster.local
+  REDIS_HOST: redis-service.prod.svc.cluster.local
   REDIS_PORT: "6379"
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: node-app
-  namespace: app
+  namespace: prod
 spec:
   replicas: 1
   selector:
@@ -40,13 +35,17 @@ spec:
       labels:
         app: node-app
     spec:
+      volumes:
+        - name: redis-cert-secret
+          secret:
+            secretName: redis-cert-secret
       initContainers:
         - name: wait-for-redis
-          image: busybox
-          command: ["sh", "-c", "until nslookup $REDIS_HOST; do echo waiting for redis; sleep 2; done;"]
+          image: redis:alpine
           envFrom:
-            - configMapRef:
-                name: node-app-configmap
+          - configMapRef:
+              name: node-app-configmap    
+          command: ['sh', '-c', 'until redis-cli -h $REDIS_HOST -p $REDIS_PORT ping; do echo waiting for redis; sleep 2; done;']
       containers:
       - name: node-app
         image: node-app:1.0.0
@@ -65,4 +64,7 @@ spec:
           valueFrom:
             configMapKeyRef:
               name: node-app-configmap
-              key: REDIS_PORT
+              key: REDIS_PORT      
+        volumeMounts:
+          - mountPath: /etc/redis/certs
+            name: redis-cert-secret

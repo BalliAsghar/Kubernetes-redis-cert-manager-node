@@ -1,20 +1,28 @@
 import Redis from "ioredis";
 import Express from "express";
 import { config } from "dotenv";
-
+import fs from "fs";
 config();
 
 const REDIS_HOST = process.env.REDIS_HOST || "localhost";
 const REDIS_PORT = process.env.REDIS_PORT || 6379;
 
-console.log(`Connecting to Redis at ${REDIS_HOST}:${REDIS_PORT}`);
-
 const app = Express();
 app.use(Express.json());
+
+// Read the certificates
+const ca = fs.readFileSync("/etc/redis/certs/ca.crt");
+const cert = fs.readFileSync("/etc/redis/certs/tls.crt");
+const key = fs.readFileSync("/etc/redis/certs/tls.key");
 
 const redis = new Redis({
   host: REDIS_HOST,
   port: REDIS_PORT,
+  tls: {
+    ca,
+    cert,
+    key,
+  },
 });
 
 app.get("/ping", async (_req, res) => {

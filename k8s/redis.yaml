@@ -1,26 +1,42 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: redis
+  name: prod
 ---
-apiVersion: v1
-kind: Service
+# Create an Issuer resource
+apiVersion: cert-manager.io/v1
+kind: Issuer
 metadata:
-  name: redis-service
-  namespace: redis
+  name: selfsigned-issuer
+  namespace: prod
 spec:
-  selector:
-    app: redis
-  ports:
-  - protocol: TCP
-    port: 6379
-    targetPort: 6379
+  selfSigned: {}
+---
+# Create a Certificate resource
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: redis-cert
+  namespace: prod
+spec:
+  secretName: redis-cert-secret # The secret where the certificate will be stored
+  duration: 2160h # The certificate validity period 
+  renewBefore: 360h # The time before expiration when auto renewal will start 
+  commonName: redis.example.com # The subject name of the certificate 
+  dnsNames:
+    - redis.example.com # Additional subject names of the certificate 
+    - redis-service.prod.svc.cluster.local # The service name of Redis in Kubernetes 
+    - localhost # For testing purposes 
+    - 127.0.0.1 # For testing purposes 
+  issuerRef:
+    name: selfsigned-issuer # The issuer resource name 
+    kind: Issuer # The issuer resource kind 
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: redis
-  namespace: redis
+  namespace: prod
 spec:
   replicas: 1
   selector:
@@ -31,39 +47,50 @@ spec:
       labels:
         app: redis
     spec:
+      volumes:
+        - name: redis-cert-secret
+          secret:
+            secretName: redis-cert-secret
       containers:
       - name: redis
-        image: redis:alpine
+        image: bitnami/redis:latest
         ports:
         - containerPort: 6379
+        env:
+          - name: ALLOW_EMPTY_PASSWORD
+            value: "yes"   
+          - name: REDIS_TLS_ENABLED
+            value: "yes"
+          - name: REDIS_TLS_PORT_NUMBER
+            value: "6379"
+          - name: REDIS_TLS_CERT_FILE
+            value: /etc/redis/certs/tls.crt
+          - name: REDIS_TLS_KEY_FILE
+            value: /etc/redis/certs/tls.key
+          - name: REDIS_TLS_CA_FILE
+            value: /etc/redis/certs/ca.crt
+        volumeMounts:
+          - mountPath: /etc/redis/certs
+            name: redis-cert-secret
 ---
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: redis-config
-  namespace: redis
+  namespace: prod
 data:
   REDIS_HOST: redis-service
   REDIS_PORT: "6379"
 ---
-# To clear the cache every 2 minutes, should be enough for this demo
-apiVersion: batch/v1
-kind: CronJob
+apiVersion: v1
+kind: Service
 metadata:
-  name: redis-clear-cache
-  namespace: redis
+  name: redis-service
+  namespace: prod
 spec:
-  schedule: "*/2 * * * *"
-  jobTemplate:
-    spec:
-      template:
-        spec:
-          containers:
-            - name: redis-clear-cache
-              image: redis:alpine
-              command: ["redis-cli", "-h", "$(REDIS_HOST)", "-p", "$(REDIS_PORT)", "FLUSHALL"]
-              envFrom:
-                - configMapRef:
-                    name: redis-config
-              imagePullPolicy: IfNotPresent
-          restartPolicy: Never
+  selector:
+    app: redis
+  ports:
+  - protocol: TCP
+    port: 6379
+    targetPort: 6379
