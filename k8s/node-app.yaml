@@ -42,10 +42,13 @@ spec:
       initContainers:
         - name: wait-for-redis
           image: redis:alpine
+          volumeMounts:
+            - mountPath: /etc/redis/certs
+              name: redis-cert-secret
           envFrom:
           - configMapRef:
               name: node-app-configmap    
-          command: ['sh', '-c', 'until redis-cli -h $REDIS_HOST -p $REDIS_PORT ping; do echo waiting for redis; sleep 2; done;']
+          command: ["sh", "-c", "until redis-cli -h $REDIS_HOST -p 6379 --tls --cert /etc/redis/certs/tls.crt --key /etc/redis/certs/tls.key --cacert /etc/redis/certs/ca.crt ping; do sleep 0.5; done;"]
       containers:
       - name: node-app
         image: node-app:1.0.0
