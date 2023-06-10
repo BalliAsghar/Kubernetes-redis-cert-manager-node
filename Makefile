@@ -4,7 +4,7 @@ deploy:
 	@echo "Building and deploying the app..."
 
 	@echo "Installing cert-manager..."
-	kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.11.0/cert-manager.yaml
+	kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.12.0/cert-manager.yaml
 
 	docker build -t node-app:1.0.0 .
 
