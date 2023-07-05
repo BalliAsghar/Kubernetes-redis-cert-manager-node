@@ -36,7 +36,7 @@ app.get("/ping", async (_req, res) => {
 });
 
 app.get("/set/:value", async (req, res) => {
-  console.log("Received set request");
+  console.log("Received Set Request from: ", req.headers["user-agent"]);
   try {
     const { value } = req.params;
     // create a random key
