@@ -29,5 +29,9 @@ cluster:
 load:
 	k3d image import node-app:1.0.0 -c Edge
 
+# build docker image
+build:
+	docker build -t node-app:1.0.0 .
+
 restart:
-	kubectl rollout restart deployment node-app -n app
+	kubectl rollout restart deployment node-app -n prod
