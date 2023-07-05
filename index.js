@@ -26,7 +26,7 @@ const redis = new Redis({
 });
 
 app.get("/ping", async (_req, res) => {
-  console.log("Received ping request");
+  console.log("Received Ping Request from: ", _req.headers["user-agent"]);
   try {
     const pong = await redis.ping();
     res.status(200).send(pong);
